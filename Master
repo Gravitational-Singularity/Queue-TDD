@@ -1,0 +1,453 @@
+/*
+ queue.c
+ 
+ CMPS 12B HW 6
+ 
+ program implements a circular queue in C and uses unit tests to ensure it works correctly.
+ 
+ references circular que code in Data Structures and Algorithms by Robert Lafore
+ */
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "minunit.h"
+
+
+#define MAXSIZE 100
+
+int tests_run = 0; // keep track of number of unit tests run
+
+typedef enum q_status {
+    /* Enumerated status codes for queue operations */
+    q_success = 0,
+    q_failure
+} q_status;
+
+/**** Private variables for queue ****/
+static int * que;
+static int numItems, front, rear;
+/**** Functions on queues ****/
+
+q_status q_init(void) {
+    /* Initialize the queue */
+	
+	rear = 0;
+	front = 0;
+	numItems = 0;
+	que = (int *)malloc(sizeof(int) * 100);
+	
+	
+	if(numItems != 0)
+		//only happens if the que is not empty
+	{
+		for(int i = 0; i < MAXSIZE; i++)
+			//sets values for the entire que
+		{
+			que[i] = 0; 
+		}
+		//sets all que variables to their initial zeros
+		
+		return q_success;
+		//success
+		
+		
+	} else {
+		rear = 0;
+		front = 0;
+		//simply resets rear and front if the que is empty
+		
+		return q_success;
+		//success
+	}
+		
+	return q_failure;
+	//otherwise, failure occurs
+}
+
+q_status q_insert(int value) {
+	
+	if(numItems != 0)
+		//only happens if the que isn't empty
+	{
+		if(numItems < MAXSIZE)
+			//AND if the que is not full
+		{
+			if(rear == MAXSIZE - 1)
+				//if rear is at the end of the que, reset rear
+			{
+				rear = - 1;
+				//rear reset to - 1
+			}
+			que[++rear] = value;
+			//increments rear and sets que at [rear] to be value
+			numItems++;
+			//increases the count of the number of items in the que
+			
+			return q_success;
+			//success
+		}
+	} else {
+		//only happens if the que is empty
+		que[rear] = value;
+		//sets rear place to be value
+		
+		numItems++;
+		//increase the number of items in the que
+		
+		return q_success;
+		//success
+	}
+	
+    return q_failure;
+	//otherwise failure
+}
+
+q_status q_remove(int *value) {
+    /* Remove item from front of queue
+
+       Stores item at front of queue into pointer
+       given as argument. Removes item from queue.
+
+       Returns qSuccess on success.
+    */
+	if(value == NULL) //if the input's value is null
+	{
+		return q_failure; //access is unsuccessful
+	} else {
+		if(numItems != 0) //only happens if the que has entries
+		{
+			*value = que[front++]; //sets value to que at place front, then increments front
+			if(front == MAXSIZE) //if at the end of the que
+			{
+				front = 0; //circle back to the beginning
+			}
+			numItems--; //decrease number of items in the que.
+			return q_success; //success!
+		}
+	}
+
+	
+    return q_failure; //otherwise, failure.
+}
+
+q_status q_peek(int *value) {
+    /* Peek at item at front of queue
+
+       Stores item at front of queue into pointer
+       given as argument. Queue is not altered.
+
+       Returns qSuccess on success.
+    */
+	if(value == NULL) //only happens if value is null
+	{
+		return q_failure; //fails if value is null
+	} else {
+		if(numItems != 0) //peek only works there are items in the que
+		{
+			*value = que[front]; //sets the value of the front of the que
+			return q_success; //returns success
+		} else {
+			return q_failure; //fails if que is empty
+		}
+	}
+
+	
+    return q_failure; //otherwise fails
+}
+
+q_status q_destroy(void) {
+    /* Destroy the queue */
+	if(que != NULL)
+	{
+		free(que);
+		//frees the memory allocated to the que
+		return q_success;
+		//and succeedes
+	} else {
+	    return q_failure;
+		//if the que is already empty, then destroying the queue fails
+	}
+	//otherwise the que fails
+}
+
+q_status q_is_empty(void)
+	/* Checks if the que is empty */
+{
+	if(numItems == 0)
+		//if the que is empty
+	{
+		return 1;
+		//return true
+	} else {
+		return 0;
+		//else return false
+	}
+}
+
+/**** Unit tests ****/
+
+char * test_lifecycle(void) {
+    mu_assert("init", q_init() == q_success);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_one_insert(void) {
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(7) == q_success);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_one_insert_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(16) == q_success);
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("value", v == 16);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_two_insert_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(8) == q_success);
+    mu_assert("insert", q_insert(91) == q_success);
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("value", v == 8);
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("value", v == 91);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_multi_insert_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(8) == q_success);
+    mu_assert("insert", q_insert(91) == q_success);
+    for(int i = 0; i < 1000; i++) {
+        mu_assert("insert", q_insert(8) == q_success);
+        mu_assert("insert", q_insert(91) == q_success);
+        mu_assert("remove", q_remove(&v) == q_success);
+        mu_assert("value", v == 8);
+        mu_assert("remove", q_remove(&v) == q_success);
+        mu_assert("value", v == 91);
+    }
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("value", v == 8);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_indexed_insert_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    for(int i = 0; i < 30; i++) {
+        mu_assert("insert", q_insert(i) == q_success);
+    }
+    for(int i = 0; i < 1000; i++) {
+        mu_assert("remove", q_remove(&v) == q_success);
+        mu_assert("value", v == i);
+        mu_assert("insert", q_insert(30 + i) == q_success);
+    }
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_too_many_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("remove", q_remove(&v) == q_failure);
+    return NULL;
+}
+
+char * test_insert_too_many_remove(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    for(int i = 0; i < 30; i++) {
+        mu_assert("insert", q_insert(i) == q_success);
+    }
+    for(int i = 0; i < 30; i++) {
+        mu_assert("remove", q_remove(&v) == q_success);
+        mu_assert("value", v == i);
+    }
+    mu_assert("remove", q_remove(&v) == q_failure);
+    return NULL;
+}
+
+char * test_peek(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(18) == q_success);
+    mu_assert("peek", q_peek(&v) == q_success);
+    mu_assert("value", v == 18);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_peek_two(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(18) == q_success);
+    mu_assert("insert", q_insert(42) == q_success);
+    mu_assert("peek", q_peek(&v) == q_success);
+    mu_assert("value", v == 18);
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_peek_deep(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    for(int i = 0; i < 30; i++) {
+        mu_assert("insert", q_insert(i) == q_success);
+    }
+    for(int i = 0; i < 1000; i++) {
+        mu_assert("peek", q_peek(&v) == q_success);
+        mu_assert("value", v == i);
+        mu_assert("remove", q_remove(&v) == q_success);
+        mu_assert("value", v == i);
+        mu_assert("insert", q_insert(30 + i) == q_success);
+    }
+    mu_assert("destroy", q_destroy() == q_success);
+    return NULL;
+}
+
+char * test_peek_empty(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("peek", q_peek(&v) == q_failure);
+    return NULL;
+}
+
+char * test_peek_two_empty(void) {
+    int v;
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(18) == q_success);
+    mu_assert("insert", q_insert(42) == q_success);
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("remove", q_remove(&v) == q_success);
+    mu_assert("peek", q_peek(&v) == q_failure);
+    return NULL;
+}
+
+char * test_remove_null(void) {
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(18) == q_success);
+    mu_assert("peek", q_remove(NULL) == q_failure);
+    return NULL;
+}
+
+char * test_peek_null(void) {
+    mu_assert("init", q_init() == q_success);
+    mu_assert("insert", q_insert(18) == q_success);
+    mu_assert("peek", q_peek(NULL) == q_failure);
+    return NULL;
+}
+
+char * triple_insert_test(void) 
+{
+	int v, w, x, a = 1, b = 2, c = 3;
+	//setting variables
+	mu_assert("initialize", q_init() == q_success);
+	//resets que
+	
+	
+	mu_assert("insert", q_insert(a) == q_success);
+	mu_assert("insert", q_insert(b) == q_success);
+	mu_assert("insert", q_insert(c) == q_success);
+	//inserting values
+	
+	mu_assert("remove", q_remove(&v) == q_success);
+	mu_assert("remove", q_remove(&w) == q_success);
+	mu_assert("remove", q_remove(&x) == q_success);	
+	//removing elements from the que and setting them to variables
+	
+	
+	mu_assert("value", w == b);
+	mu_assert("value", v == a);
+	mu_assert("value", x == c);
+	//checking if values removed from que match those inserted into the que.
+	
+	mu_assert("destroy", q_destroy() == q_success);
+	//destroys queue
+	
+	return NULL;
+}
+
+char * is_empty_true_test(void)
+	//tests if the array is empty
+{	mu_assert("initialize the que", q_init() == q_success);
+	//resets the array, should now be empty
+	
+	mu_assert("isEmpty?", q_is_empty() == 1);
+	//checks if empty, should return true (1)
+	
+	mu_assert("destroy", q_destroy() == q_success);
+	//destroys queue
+	
+	return NULL;
+}
+
+char * is_empty_false_test(void)
+//tests if the array is empty
+{
+    
+    int a = 1;
+    //declare int for testing
+	mu_assert("initialize the que", q_init() == q_success);
+		//resets the array, should now be empty
+
+    
+    mu_assert("insert", q_insert(a) == q_success);
+    //inserts a value
+    
+    mu_assert("isEmpty?", q_is_empty() == 0);
+    //checks if empty, should return false (0)
+	
+    mu_assert("destroy", q_destroy() == q_success);
+    //resets the array, should now be empty
+    
+    return NULL;
+}
+
+char * all_tests(void) {
+    /* Run all unit tests */
+		mu_run_test(test_lifecycle);
+	    mu_run_test(test_one_insert);
+	    mu_run_test(test_one_insert_remove);
+		mu_run_test(test_two_insert_remove);
+		mu_run_test(test_multi_insert_remove);
+		mu_run_test(test_indexed_insert_remove);
+		mu_run_test(test_too_many_remove);
+		mu_run_test(test_insert_too_many_remove);
+		mu_run_test(test_peek);
+		mu_run_test(test_peek_two);
+		mu_run_test(test_peek_deep);
+		mu_run_test(test_peek_empty);
+		mu_run_test(test_peek_two_empty);
+		mu_run_test(test_remove_null);
+		mu_run_test(test_peek_null);
+		mu_run_test(triple_insert_test);
+		mu_run_test(is_empty_true_test);
+		mu_run_test(is_empty_false_test);
+    return NULL;
+}
+
+/**** Main unit test runner ****/
+
+int main(int argc, char *argv[]) {
+    printf("Queue Module unit tests\n");
+    char *result = all_tests();
+    if (result) {
+        printf("FAILURE at %s\n", result);
+    } else {
+        printf("ALL TESTS PASS\n");
+    }
+    printf("Tests run: %d\n", tests_run);
+    return EXIT_SUCCESS;
+}
